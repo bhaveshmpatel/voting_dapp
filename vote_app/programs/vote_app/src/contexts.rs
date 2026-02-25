@@ -28,11 +28,20 @@ pub struct InitializeTreasury<'info> {
 
     #[account(
         init,
-        payer=authority,
+        payer = authority,
         associated_token::mint = x_mint,    // this account will hold this specific token only
         associated_token::authority = authority
     )]
     pub treasury_token_account:Account<'info, TokenAccount>,    //hold xMint token
+
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + ProposalCounter::INIT_SPACE,
+        seeds = [b"proposal_counter"],
+        bump
+    )]
+    pub proposal_counter_account:Account<'info, ProposalCounter>,
 
     /// CHECK:This is to receive SOL tokens
     #[account(mut, seeds=[b"sol_vault"],bump)]
@@ -103,3 +112,43 @@ pub struct RegisterVoter<'info> {
 
     pub system_program:Program<'info, System>
 }
+
+#[derive(Accounts)]
+pub struct RegisterProposal<'info> {
+    #[account(mut)]
+    pub authority:Signer<'info>,
+
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + Proposal::INIT_SPACE,
+        seeds = [b"proposal", proposal_counter_account.proposal_count.to_be_bytes().as_ref()],
+        bump
+    )]
+    pub proposal_account:Account<'info, Proposal>,
+
+    #[account(mut)]
+    pub proposal_counter_account:Account<'info, ProposalCounter>,
+
+    #[account(mut)]
+    pub x_mint:Account<'info, Mint>,
+
+    #[account(
+        mut,    // this account will be already made from client side so no need to init
+        constraint = proposal_token_account.mint == x_mint.key(),    // only stores the specifix x_mint token
+        constraint = proposal_token_account.owner == authority.key()
+    )]
+    pub proposal_token_account:Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = treasury_token_account.mint == x_mint.key()    // only stores the specifix x_mint token
+    )]
+    pub treasury_token_account:Account<'info, TokenAccount>,    //hold xMint token
+
+    pub token_program:Program<'info, Token>,
+
+    pub system_program:Program<'info, System>
+}
+
+
