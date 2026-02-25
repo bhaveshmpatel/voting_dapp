@@ -53,9 +53,10 @@ pub struct InitializeTreasury<'info> {
 pub struct BuyTokens<'info> {
     #[account(
         seeds = [b"treasury_config"],
-        bump
+        bump,
+        constraint = treasury_config_account.x_mint == x_mint.key()     // to make sure that the specific x_mint token is been purchased & its buyer responsibility to transfer the correct x_mint
     )]
-    pub treasury_config_account:Account<'info, TreasuryConfig>, // used to get bump of sol_vault which was already computed and stored here
+    pub treasury_config_account:Account<'info, TreasuryConfig>,     // used to get bump of sol_vault which was already computed and stored here
 
     /// CHECK:This is to receive SOL tokens
     #[account(mut, seeds=[b"sol_vault"],bump = treasury_config_account.bump)]
@@ -64,10 +65,7 @@ pub struct BuyTokens<'info> {
     #[account(mut)]
     pub treasury_token_account:Account<'info, TokenAccount>,    // to transfer the token to buyer token acc
 
-    #[account(
-        seeds = [b"x_mint"],
-        bump
-    )]
+    #[account(mut)]
     pub x_mint:Account<'info, Mint>,
 
     #[account(
