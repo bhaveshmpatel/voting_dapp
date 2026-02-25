@@ -13,8 +13,11 @@ const SEEDS = {
   SOL_VAULT: "sol_vault",
   TREASURY_CONFIG: "treasury_config",
   MINT_AUTHORITY: "mint_authority",
-  X_MINT: "x_mint"
+  X_MINT: "x_mint",
+  VOTER: "voter"
 } as const;
+
+const PROPOSAL_ID = 1;
 
 const findPda = (programId: anchor.web3.PublicKey, seeds:(Buffer | Uint8Array)[]): anchor.web3.PublicKey => {
   const [pda, bump] = anchor.web3.PublicKey.findProgramAddressSync(seeds, programId);
@@ -36,12 +39,14 @@ describe("Testing the voting dapp", () => {
   const adminWallet = (provider.wallet as NodeWallet).payer;
 
   let proposalCreatorWallet = new anchor.web3.Keypair();
+  let voterWallet = new anchor.web3.Keypair();
   let proposalCreatorTokenAccount: anchor.web3.PublicKey;
   
   let treasuryConfigPda: anchor.web3.PublicKey;
   let xMintPda: anchor.web3.PublicKey;
   let solVaultPda: anchor.web3.PublicKey;
   let mintAuthorityPda: anchor.web3.PublicKey;
+  let voterPda: anchor.web3.PublicKey;
   let treasuryTokenAccount: anchor.web3.PublicKey;
 
   beforeEach(async () => {
@@ -50,8 +55,14 @@ describe("Testing the voting dapp", () => {
     solVaultPda = findPda(program.programId, [anchor.utils.bytes.utf8.encode(SEEDS.SOL_VAULT)]);
     mintAuthorityPda = findPda(program.programId, [anchor.utils.bytes.utf8.encode(SEEDS.MINT_AUTHORITY)]);
 
+    voterPda = findPda(program.programId, [
+      anchor.utils.bytes.utf8.encode(SEEDS.VOTER),
+      voterWallet.publicKey.toBuffer()    // to create different pda for different users
+    ]);
+
     console.log("Transfering SOL...");
     await airdropSol(connection, proposalCreatorWallet.publicKey, 10 * anchor.web3.LAMPORTS_PER_SOL);
+    await airdropSol(connection, voterWallet.publicKey, 10 * anchor.web3.LAMPORTS_PER_SOL);
     console.log("Transfered SOL Successfully");
 
   })
@@ -110,5 +121,15 @@ describe("Testing the voting dapp", () => {
     });
   })
 
+  describe('3. Voter', () => { 
+    it("3.1 Register Voters!", async () => {
+      await program.methods.registerVoter().accounts({
+        authority: voterWallet.publicKey,
+      }).signers([voterWallet]).rpc();
+
+      const voterAccountData = await program.account.voter.fetch(voterPda);
+      expect(voterAccountData.voterId.toBase58()).to.equal(voterWallet.publicKey.toBase58())
+    });
+   })
 });
 

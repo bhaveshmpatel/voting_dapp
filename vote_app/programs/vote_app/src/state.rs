@@ -10,3 +10,10 @@ pub struct TreasuryConfig{
     pub token_per_purchase: u64,        // no of token given on a particular price
     pub bump: u8
 }
+
+#[account]
+#[derive(InitSpace)]
+pub struct Voter {
+    pub voter_id: Pubkey,
+    pub proposal_voted: u8
+}
