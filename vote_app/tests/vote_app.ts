@@ -62,6 +62,8 @@ describe("Testing the voting dapp", () => {
   let mintAuthorityPda: anchor.web3.PublicKey;
   let voterPda: anchor.web3.PublicKey;
   let treasuryTokenAccount: anchor.web3.PublicKey;
+  let voterTokenAccount: anchor.web3.PublicKey;
+
 
   beforeEach(async () => {
     treasuryConfigPda = findPda(program.programId, [anchor.utils.bytes.utf8.encode(SEEDS.TREASURY_CONFIG)]);
@@ -82,8 +84,11 @@ describe("Testing the voting dapp", () => {
     ]);
 
     console.log("Transfering SOL...");
-    await airdropSol(connection, proposalCreatorWallet.publicKey, 10 * anchor.web3.LAMPORTS_PER_SOL);
-    await airdropSol(connection, voterWallet.publicKey, 10 * anchor.web3.LAMPORTS_PER_SOL);
+    await Promise.all([
+      airdropSol(connection, proposalCreatorWallet.publicKey, 10 * anchor.web3.LAMPORTS_PER_SOL),
+      airdropSol(connection, voterWallet.publicKey, 10 * anchor.web3.LAMPORTS_PER_SOL)
+    ]);
+    
     console.log("Transfered SOL Successfully");
 
   })
@@ -102,6 +107,13 @@ describe("Testing the voting dapp", () => {
       proposalCreatorWallet,
       xMintPda,
       proposalCreatorWallet.publicKey
+    )).address;
+
+    voterTokenAccount = (await getOrCreateAssociatedTokenAccount(
+      connection,
+      voterWallet,
+      xMintPda,
+      voterWallet.publicKey
     )).address;
   }
 
@@ -127,7 +139,7 @@ describe("Testing the voting dapp", () => {
   
 
   describe("2. Buys Tokens!", () => {
-    it("2.1 Buys Tokens!", async () => {
+    it("2.1 Buys tokens for proposal creator", async () => {
       const tokenBalanceBefore = (await getAccount(connection, proposalCreatorTokenAccount)).amount;
 
       await program.methods.buyTokens().accounts({
@@ -138,6 +150,20 @@ describe("Testing the voting dapp", () => {
       }).signers([proposalCreatorWallet]).rpc() 
 
       const tokenBalanceAfter = (await getAccount(connection, proposalCreatorTokenAccount)).amount;
+      expect(tokenBalanceAfter-tokenBalanceBefore).to.equal(BigInt(1000_000_000))
+    });
+
+    it("2.2 Buys tokens for voter", async () => {
+      const tokenBalanceBefore = (await getAccount(connection, voterTokenAccount)).amount;
+
+      await program.methods.buyTokens().accounts({
+        buyer: voterWallet.publicKey,
+        treasuryTokenAccount: treasuryTokenAccount,
+        buyerTokenAccount: voterTokenAccount,
+        xMint: xMintPda
+      }).signers([voterWallet]).rpc() 
+
+      const tokenBalanceAfter = (await getAccount(connection, voterTokenAccount)).amount;
       expect(tokenBalanceAfter-tokenBalanceBefore).to.equal(BigInt(1000_000_000))
     });
   })
@@ -154,7 +180,7 @@ describe("Testing the voting dapp", () => {
   })
 
   describe('4. Proposal Registration', () => { 
-    it("3.1 Register Proposal!", async () => {
+    it("4.1 Register Proposal!", async () => {
       const currentBlockTime = await getBlockTime(connection);
       const deadlineTime = new anchor.BN(currentBlockTime + 10);
       const proposalInfo  = "Build a layer 2 solution";
@@ -179,6 +205,19 @@ describe("Testing the voting dapp", () => {
       expect(proposalAccountData.proposalId.toString()).to.equal("1");
       expect(proposalAccountData.proposalInfo.toString()).to.equal("Build a layer 2 solution");
     });
-  })  
+  })
+
+  describe('5. Casting Vote', () => { 
+    it("5.1 Cast Vote!", async () => {
+      const stakeAmount = new anchor.BN(1000);
+
+      await program.methods.proposalToVote(PROPOSAL_ID, stakeAmount).accounts({
+        authority: voterWallet.publicKey,
+        voterTokenAccount: voterTokenAccount,
+        treasuryTokenAccount: treasuryTokenAccount,
+        xMint: xMintPda
+      }).signers([voterWallet]).rpc();
+    });
+  })
 });
 
