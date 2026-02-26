@@ -26,7 +26,7 @@ const idlWithAddress = { ...idl, address: programID.toBase58() };
 // Local: "http://127.0.0.1:8899"
 // Devnet: "https://api.devnet.solana.com"
 
-const network = "http://127.0.0.1:8899";
+const network = "https://api.devnet.solana.com";
 const connection = new Connection(network, "processed");
 
 //getProvider function
