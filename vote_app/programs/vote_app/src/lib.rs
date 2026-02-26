@@ -34,7 +34,7 @@ pub mod vote_app {
         });
         
         let proposal_counter_account = &mut ctx.accounts.proposal_counter_account;
-        require!(proposal_counter_account.proposal_count == 0, VoteError::ProposalCounterAlreadyInitilaized);
+        require!(proposal_counter_account.proposal_count == 0, VoteError::ProposalCounterAlreadyInitialized);
         proposal_counter_account.proposal_count = 1;
         proposal_counter_account.authority = ctx.accounts.authority.key();
 
@@ -205,7 +205,7 @@ pub mod vote_app {
         );
 
         // Check if this proposal has any votes
-        require!(proposal.number_of_votes > 0, VoteError::NoVoteCast);
+        require!(proposal.number_of_votes > 0, VoteError::NoVotesCast);
 
         if proposal.number_of_votes > winner.winning_votes {
             winner.winning_proposal_id = proposal_id;

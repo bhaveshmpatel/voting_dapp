@@ -2,30 +2,39 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum VoteError {
-    #[msg("Invalid deadline passed")]
+    #[msg("Deadline must be a future timestamp")]
     InvalidDeadline,
+    
+    #[msg("Proposal counter has already been initialized")]
+    ProposalCounterAlreadyInitialized,
 
-    #[msg("Proposal counter is already initilaized")]
-    ProposalCounterAlreadyInitilaized,
-
-    #[msg("Proposal Counter Overflow")]
+    #[msg("Maximum proposal limit reached")]
     ProposalCounterOverflow,
 
-    #[msg("Proposal Ended")]
+    #[msg("Voting period has ended for this proposal")]
     ProposalEnded,
 
-    #[msg("Proposal Votes Overflow")]
+    #[msg("Vote count overflow - maximum votes exceeded")]
     ProposalVotesOverflow,
 
-    #[msg("Voting is still active - cannot declare winner yet")]
+    #[msg("Cannot declare winner while voting is still active")]
     VotingStillActive,
 
-    #[msg("No vote cast for this proposal")]
-    NoVoteCast,
+    #[msg("No votes have been cast for this proposal")]
+    NoVotesCast,
 
-    #[msg("Unauthorized access")]
+    #[msg("You are not authorized to perform this action")]
     UnauthorizedAccess,
-
-    #[msg("Token Mint Mismatch")]
+    
+    #[msg("Token mint does not match the expected mint")]
     TokenMintMismatch,
+
+    #[msg("Voter has already voted on this proposal")]
+    VoterAlreadyVoted,
+
+    #[msg("Token account is not owned by the expected wallet")]
+    InvalidTokenAccountOwner,
+
+    #[msg("Provided mint account is invalid")]
+    InvalidMint,
 }
