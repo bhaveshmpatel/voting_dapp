@@ -15,6 +15,7 @@ const SEEDS = {
   MINT_AUTHORITY: "mint_authority",
   X_MINT: "x_mint",
   VOTER: "voter",
+  WINNER: "winner",
   PROPOSAL_COUNTER: "proposal_counter",
   PROPOSAL: "proposal"
 } as const;
@@ -41,6 +42,15 @@ const getBlockTime = async (connection: anchor.web3.Connection): Promise<number>
   return blockTime;
 }
 
+const expectAnchorErrorCode = (err: unknown, expectedCode: string) => {
+  const anyErr = err as any;
+  const actualCode = 
+    anyErr?.error?.errorCode?.code ??
+    anyErr?.errorCode?.code ??
+    anyErr?.code;
+  expect(actualCode).to.equal(expectedCode);
+}
+
 describe("Testing the voting dapp", () => {
   const provider = anchor.AnchorProvider.env()
   const connection = provider.connection;
@@ -61,6 +71,7 @@ describe("Testing the voting dapp", () => {
   let solVaultPda: anchor.web3.PublicKey;
   let mintAuthorityPda: anchor.web3.PublicKey;
   let voterPda: anchor.web3.PublicKey;
+  let winnerPda: anchor.web3.PublicKey;
   let treasuryTokenAccount: anchor.web3.PublicKey;
   let voterTokenAccount: anchor.web3.PublicKey;
 
@@ -68,6 +79,8 @@ describe("Testing the voting dapp", () => {
   beforeEach(async () => {
     treasuryConfigPda = findPda(program.programId, [anchor.utils.bytes.utf8.encode(SEEDS.TREASURY_CONFIG)]);
     
+    winnerPda = findPda(program.programId, [anchor.utils.bytes.utf8.encode(SEEDS.WINNER)]);
+
     proposalPda = findPda(program.programId, [anchor.utils.bytes.utf8.encode(SEEDS.PROPOSAL), Buffer.from([PROPOSAL_ID])]);
     
     proposalCounterPda = findPda(program.programId, [anchor.utils.bytes.utf8.encode(SEEDS.PROPOSAL_COUNTER)]);
@@ -217,6 +230,33 @@ describe("Testing the voting dapp", () => {
         treasuryTokenAccount: treasuryTokenAccount,
         xMint: xMintPda
       }).signers([voterWallet]).rpc();
+    });
+  })
+
+  describe('6. Pick Winner', () => { 
+    it("6.1 Should fail to pick winner before deadline passes", async () => {
+      try {
+        await program.methods.pickWinner(PROPOSAL_ID).accounts({
+          authority: adminWallet.publicKey,
+        }).signers([adminWallet]).rpc();
+      } catch(error) {
+        expectAnchorErrorCode(error, "VotingStillActive")
+      }
+    });
+
+    it("6.2 Should pick winner after dealdline passes", async () => {
+      // Wait for voting deadline passes
+      console.log("      Waiting for voting deadline...");
+      await new Promise((resolve) => setTimeout(resolve, 12000));
+
+      await program.methods.pickWinner(PROPOSAL_ID).accounts({
+        authority: adminWallet.publicKey,
+      }).signers([adminWallet]).rpc();
+      
+      const winnerData = await program.account.winner.fetch(winnerPda);
+      
+      expect(winnerData.winningProposalId).to.equal(PROPOSAL_ID);
+      expect(winnerData.winningVotes).to.equal(1);
     });
   })
 });

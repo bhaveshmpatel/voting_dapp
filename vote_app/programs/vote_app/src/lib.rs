@@ -144,6 +144,33 @@ pub mod vote_app {
         
         Ok(())
     }
+
+    pub fn pick_winner(ctx: Context<PickWinner>, proposal_id: u8) -> Result<()> {
+
+        let clock = Clock::get()?;
+
+        let proposal = &mut ctx.accounts.proposal_account;
+        let winner = &mut ctx.accounts.winner_account;
+
+        // Ensure voting period has ended
+        require!(
+            clock.unix_timestamp >= proposal.deadline,
+            VoteError::VotingStillActive
+        );
+
+        // Check if this proposal has any votes
+        require!(proposal.number_of_votes > 0, VoteError::NoVoteCast);
+
+        if proposal.number_of_votes > winner.winning_votes {
+            winner.winning_proposal_id = proposal_id;
+            winner.winning_votes = proposal.number_of_votes;
+            winner.proposal_info = proposal.proposal_info.clone();
+            winner.declared_at = clock.unix_timestamp;
+        }
+        
+        Ok(())
+    }
+    
 }
 
 

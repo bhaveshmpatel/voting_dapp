@@ -16,4 +16,10 @@ pub enum VoteError {
 
     #[msg("Proposal Votes Overflow")]
     ProposalVotesOverflow,
+
+    #[msg("Voting is still active - cannot declare winner yet")]
+    VotingStillActive,
+
+    #[msg("No vote cast for this proposal")]
+    NoVoteCast
 }
