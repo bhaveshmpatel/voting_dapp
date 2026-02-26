@@ -15,3 +15,10 @@ pub struct ProposalCreated {
     pub deadline: i64,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct SolWithdrawn {
+    pub authority: Pubkey,
+    pub amount: u64,
+    pub timestamp: i64,
+}

@@ -207,6 +207,37 @@ pub mod vote_app {
         // Account will be closed by the `close` constraint
         Ok(())
     }
+
+    pub fn withdraw_sol(ctx: Context<WithdrawSol>, amount: u64) -> Result<()> {
+        let treasury_config = &ctx.accounts.treasury_config;
+
+        // Use PDA signing to transfer SOL from vault to authority
+        let sol_vault_seeds = &[b"sol_vault".as_ref(), &[treasury_config.bump]];
+        let signer_seeds = &[&sol_vault_seeds[..]];
+
+        let transfer_ix = system_program::Transfer {
+            from: ctx.accounts.sol_vault.to_account_info(),
+            to: ctx.accounts.authority.to_account_info()
+        };
+
+        system_program::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(), 
+                transfer_ix, 
+                signer_seeds
+            ), 
+            amount
+        )?;
+
+        emit!(SolWithdrawn {
+            authority: ctx.accounts.authority.key(),
+            amount,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+        
+        // Account will be closed by the `close` constraint
+        Ok(())
+    }
     
 }
 
