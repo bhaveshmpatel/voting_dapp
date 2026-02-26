@@ -33,7 +33,6 @@ const TreasuryInfo = ({ walletAddress, idlWithAddress, getProvider }) => {
             // Try to fetch treasury config to check if initialized
             try {
                 const treasuryAccountData = await program.account.treasuryConfig.fetch(treasuryConfigPda);
-                console.log(treasuryAccountData);
 
                 // Use values directly from the config instead of deriving
                 setTreasuryInfo({

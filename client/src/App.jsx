@@ -19,7 +19,7 @@ import * as anchor from "@coral-xyz/anchor";
 
 import './App.css'
 
-const programID = new PublicKey("35rA3njkouavTGNNSNrS16Pyppz4AYQaueseqwmsoqJv");
+const programID = new PublicKey("B7GFSCR1izCwyDpsfY4DgrX7TPMdmmtRmsenLBuzXwYu");
 const idlWithAddress = { ...idl, address: programID.toBase58() };
 
 // Network configuration - switch between local and devnet

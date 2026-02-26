@@ -50,9 +50,9 @@ const InitializeTreasury = ({ walletAddress, idlWithAddress, getProvider }) => {
 
         let treasuryTokenAccount = await getAssociatedTokenAddress(xMintPda,
             provider.wallet.publicKey
-        )
+        );
 
-        console.log(treasuryTokenAccount.toBase58())
+        console.log(treasuryTokenAccount.toBase58());
 
        const solLamports = solToLamports(solPrice);
        const tokens = tokensToRaw(tokensPerPurchase);
