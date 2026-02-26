@@ -21,5 +21,11 @@ pub enum VoteError {
     VotingStillActive,
 
     #[msg("No vote cast for this proposal")]
-    NoVoteCast
+    NoVoteCast,
+
+    #[msg("Unauthorized access")]
+    UnauthorizedAccess,
+
+    #[msg("Token Mint Mismatch")]
+    TokenMintMismatch,
 }

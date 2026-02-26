@@ -259,5 +259,21 @@ describe("Testing the voting dapp", () => {
       expect(winnerData.winningVotes).to.equal(1);
     });
   })
+
+  describe('7. Close Proposal', () => { 
+    it("7.1 Should close proposal one after deadline and recover rent", async () => {
+      const accountInfoBefore = await connection.getAccountInfo(proposalPda);
+      expect(accountInfoBefore).to.not.be.null;
+
+      await program.methods.closeProposal(PROPOSAL_ID).accounts({
+        destination: proposalCreatorWallet.publicKey,
+        authority: proposalCreatorWallet.publicKey,
+      }).signers([proposalCreatorWallet]).rpc();
+
+      const accountInfoAfter = await connection.getAccountInfo(proposalPda);
+      expect(accountInfoAfter).to.be.null;
+    });
+    
+  })
 });
 

@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{associated_token::AssociatedToken, token::{Mint, Token, TokenAccount}};
 use crate::state::*;
+use crate::errors::*;
 
 #[derive(Accounts)]
 pub struct InitializeTreasury<'info> {
@@ -165,8 +166,8 @@ pub struct Vote<'info> {
 
     #[account(
         mut,
-        constraint = voter_token_account.mint == x_mint.key()
-        && voter_token_account.owner == authority.key()
+        constraint = voter_token_account.mint == x_mint.key() @ VoteError::TokenMintMismatch, 
+        constraint = voter_token_account.owner == authority.key()
     )]
     pub voter_token_account: Account<'info, TokenAccount>,
 
@@ -204,4 +205,25 @@ pub struct PickWinner<'info> {
     pub authority: Signer<'info>,
 
     pub system_program:Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(proposal_id: u8)]
+pub struct CloseProposal<'info> {
+    #[account(
+        mut,
+        seeds = [b"proposal", proposal_id.to_be_bytes().as_ref()],
+        bump,
+        close = destination,
+        constraint = proposal_account.authority == authority.key() @ VoteError::UnauthorizedAccess
+    )]
+    pub proposal_account: Account<'info, Proposal>,
+
+    /// The account that will receive the rent
+    /// CHECK: This is safe - just receive lamports
+    #[account(mut)]
+    pub destination: AccountInfo<'info>,    
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
 }

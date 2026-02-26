@@ -170,6 +170,21 @@ pub mod vote_app {
         
         Ok(())
     }
+
+    pub fn close_proposal(ctx: Context<CloseProposal>, _proposal_id: u8) -> Result<()> {
+
+        let clock = Clock::get()?;
+
+        let proposal = &mut ctx.accounts.proposal_account;
+
+        // Ensure voting period has ended
+        require!(
+            clock.unix_timestamp >= proposal.deadline,
+            VoteError::VotingStillActive
+        );
+        // Account will be closed by `close` constraint
+        Ok(())
+    }
     
 }
 
