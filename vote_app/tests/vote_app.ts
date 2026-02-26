@@ -260,7 +260,7 @@ describe("Testing the voting dapp", () => {
     });
   })
 
-  describe('7. Close Proposal', () => { 
+  describe('7. Close Proposal Account', () => { 
     it("7.1 Should close proposal one after deadline and recover rent", async () => {
       const accountInfoBefore = await connection.getAccountInfo(proposalPda);
       expect(accountInfoBefore).to.not.be.null;
@@ -273,7 +273,26 @@ describe("Testing the voting dapp", () => {
       const accountInfoAfter = await connection.getAccountInfo(proposalPda);
       expect(accountInfoAfter).to.be.null;
     });
-    
+  })
+
+  describe('8. Close Voter Account', () => { 
+    it("8.1 Should close voter account one after deadline and recover rent", async () => {
+      const accountInfoBefore = await connection.getAccountInfo(voterPda);
+      expect(accountInfoBefore).to.not.be.null;
+
+      const voterBalanceBefore = await connection.getBalance(voterWallet.publicKey);
+      console.log("Voter Balance Before: ", voterBalanceBefore)
+
+      await program.methods.closeVoter().accounts({
+        authority: voterWallet.publicKey,
+      }).signers([voterWallet]).rpc();
+
+      const voterBalanceAfter = await connection.getBalance(voterWallet.publicKey);
+      console.log("Voter Balance Before: ", voterBalanceAfter)
+
+      const accountInfoAfter = await connection.getAccountInfo(voterPda);
+      expect(accountInfoAfter).to.be.null;
+    });
   })
 });
 

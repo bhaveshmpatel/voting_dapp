@@ -227,3 +227,17 @@ pub struct CloseProposal<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 }
+
+#[derive(Accounts)]
+pub struct CloseVoter<'info> {
+    #[account(
+        mut,
+        seeds = [b"voter", authority.key().as_ref()],
+        bump,
+        close = authority,
+    )]
+    pub voter_account: Account<'info, Voter>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+}
