@@ -15,6 +15,7 @@ import VoterInfo from './components/VoterInfo';
 import ProposalInfo from './components/ProposalInfo';
 import AllProposals from './components/AllProposals';
 import TreasuryInfo from './components/TreasuryInfo';
+import * as anchor from "@coral-xyz/anchor";
 
 import './App.css'
 
@@ -30,7 +31,12 @@ const connection = new Connection(network, "processed");
 
 //getProvider function
 const getProvider = () => {
-  
+  const provider = new anchor.AnchorProvider(
+    connection,
+    window.solana,
+    anchor.AnchorProvider.defaultOptions()
+  )
+  return provider;
 };
 
 function App() {
@@ -41,6 +47,24 @@ function App() {
 
   // Connect Wallet
   const connectWallet = async () => {
+      if(window.solana) {
+        try {
+          setLoading(true);
+          await window.solana.connect();
+          const walletAddress = window.solana.publicKey.toString();
+          setWalletAddress(walletAddress);
+          setError(null);
+        } catch (error) {
+          setError("Phantom wallet Connection Failed");
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        console.error("Please install phantom wallet");
+        setError("Phantom wallet not found");
+      }
+      
+    
     
   };
 

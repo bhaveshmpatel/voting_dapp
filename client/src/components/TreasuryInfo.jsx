@@ -16,7 +16,45 @@ const TreasuryInfo = ({ walletAddress, idlWithAddress, getProvider }) => {
         setError(null);
 
         try {
-          
+            const provider = getProvider();
+            const program = new anchor.Program(idlWithAddress, provider);
+
+            // Only derive PDAs that are NOT stored in the config
+            const [treasuryConfigPda] = PublicKey.findProgramAddressSync(
+                [new TextEncoder().encode(SEEDS.TREASURY_CONFIG)],
+                program.programId
+            );
+
+            const [solVaultPda] = PublicKey.findProgramAddressSync(
+                [new TextEncoder().encode(SEEDS.SOL_VAULT)],
+                program.programId
+            );
+
+            // Try to fetch treasury config to check if initialized
+            try {
+                const treasuryAccountData = await program.account.treasuryConfig.fetch(treasuryConfigPda);
+                console.log(treasuryAccountData);
+
+                // Use values directly from the config instead of deriving
+                setTreasuryInfo({
+                    treasuryConfig: treasuryConfigPda.toBase58(),
+                    solVault: solVaultPda.toBase58(),
+                    xMint: treasuryAccountData.xMint.toBase58(),  // Read from config
+                    treasuryTokenAccount: treasuryAccountData.treasuryTokenAccount.toBase58(), // Read from config
+                    authority: treasuryAccountData.authority.toBase58(),
+                    solPrice: treasuryAccountData.solPrice.toString(),
+                    tokensPerPurchase: treasuryAccountData.tokenPerPurchase.toString(),
+                    isInitialized: true
+                });
+            } catch (e) {
+                // Treasury not initialized yet - show only the config and vault PDAs
+                console.log(e)
+                setTreasuryInfo({
+                    treasuryConfig: treasuryConfigPda.toBase58(),
+                    solVault: solVaultPda.toBase58(),
+                    isInitialized: false
+                });
+            }
         } catch (err) {
             console.error("Error fetching treasury info:", err);
             setError("Failed to fetch treasury info");
