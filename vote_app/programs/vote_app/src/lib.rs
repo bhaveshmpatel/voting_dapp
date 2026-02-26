@@ -16,19 +16,33 @@ pub mod vote_app {
 
     use super::*;
 
-    pub fn initialize_treasury(ctx: Context<InitializeTreasury>, sol_price:u64, token_per_purchase:u64) -> Result<()> {
+    pub fn initialize_treasury(ctx: Context<InitializeTreasury>, sol_price:u64, tokens_per_purchase:u64) -> Result<()> {
         let treasury_config_account = &mut ctx.accounts.treasury_config_account;
 
         treasury_config_account.authority = ctx.accounts.authority.key();
         treasury_config_account.bump = ctx.bumps.sol_vault;
         treasury_config_account.sol_price = sol_price;
         treasury_config_account.x_mint = ctx.accounts.x_mint.key();
-        treasury_config_account.token_per_purchase = token_per_purchase;
+        treasury_config_account.token_per_purchase = tokens_per_purchase;
+
+        emit!(TreasuryInitialized {
+            authority: ctx.accounts.authority.key(),
+            x_mint: ctx.accounts.x_mint.key(),
+            sol_price,
+            tokens_per_purchase,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
         
         let proposal_counter_account = &mut ctx.accounts.proposal_counter_account;
         require!(proposal_counter_account.proposal_count == 0, VoteError::ProposalCounterAlreadyInitilaized);
         proposal_counter_account.proposal_count = 1;
         proposal_counter_account.authority = ctx.accounts.authority.key();
+
+        emit!(ProposalCounterInitialized {
+            authority: ctx.accounts.authority.key(),
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+
         Ok(())
     }
 
@@ -70,6 +84,13 @@ pub mod vote_app {
         //3. X Mint token
         mint_to(cpi_ctx, token_amount)?;
 
+        emit!(TokensPurchased {
+            buyer: ctx.accounts.buyer.key(),
+            sol_paid: sol,
+            tokens_received: token_amount,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+
         Ok(())
     }
 
@@ -77,6 +98,12 @@ pub mod vote_app {
         let voter_account = &mut ctx.accounts.voter_account;
 
         voter_account.voter_id = ctx.accounts.authority.key();
+
+        emit!(VoterRegistered {
+            voter: ctx.accounts.authority.key(),
+            voter_account: ctx.accounts.voter_account.key(),
+            timestamp: Clock::get()?.unix_timestamp,
+        });
         
         Ok(())
     }
@@ -152,6 +179,14 @@ pub mod vote_app {
         voter_account.proposal_voted = proposal_id;
 
         proposal_account.number_of_votes = proposal_account.number_of_votes.checked_add(1).ok_or(VoteError::ProposalVotesOverflow)?;
+
+        emit!(VoteCast {
+            voter: ctx.accounts.authority.key(),
+            proposal_id,
+            total_votes: proposal_account.number_of_votes,
+            timestamp: clock.unix_timestamp,
+        });
+
         
         Ok(())
     }
@@ -178,11 +213,19 @@ pub mod vote_app {
             winner.proposal_info = proposal.proposal_info.clone();
             winner.declared_at = clock.unix_timestamp;
         }
+
+        emit!(WinnerDeclared {
+            winning_proposal_id: proposal_id,
+            proposal_info: proposal.proposal_info.clone(),
+            total_votes: proposal.number_of_votes,
+            declared_by: ctx.accounts.authority.key(),
+            timestamp: clock.unix_timestamp,
+        });
         
         Ok(())
     }
 
-    pub fn close_proposal(ctx: Context<CloseProposal>, _proposal_id: u8) -> Result<()> {
+    pub fn close_proposal(ctx: Context<CloseProposal>, proposal_id: u8) -> Result<()> {
 
         let clock = Clock::get()?;
 
@@ -194,6 +237,14 @@ pub mod vote_app {
             VoteError::VotingStillActive
         );
         // Account will be closed by the `close` constraint
+
+        emit!(ProposalClosed {
+            proposal_id,
+            rent_recovered: ctx.accounts.proposal_account.to_account_info().lamports(),
+            recovered_to: ctx.accounts.authority.key(),
+            timestamp: clock.unix_timestamp,
+        });
+
         Ok(())
     }
 
@@ -234,8 +285,8 @@ pub mod vote_app {
             amount,
             timestamp: Clock::get()?.unix_timestamp,
         });
-        
         // Account will be closed by the `close` constraint
+        
         Ok(())
     }
     
